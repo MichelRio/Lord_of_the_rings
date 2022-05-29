@@ -2,8 +2,9 @@ package com.example.theandroidchallenge
 
 import android.os.Bundle
 import android.util.Log
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.theandroidchallenge.api.Endpoint
 import com.example.theandroidchallenge.utils.NetworkUtils
 import okhttp3.ResponseBody
@@ -13,8 +14,9 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-
-private lateinit var text : TextView
+private var layoutManager: RecyclerView.LayoutManager? = null
+private var adapter: RecyclerView.Adapter<RecyclerAdapter.ViewHolder>? = null
+private lateinit var rvMainRecyclerView: RecyclerView
 
 val baseService     = NetworkUtils.baseService
 val retrofitClient  = NetworkUtils.getRetrofitInstance(baseService)
@@ -27,7 +29,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        text = findViewById<TextView>(R.id.tvText)
+        rvMainRecyclerView = findViewById(R.id.rvMainRecyclerView)
+        layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvMainRecyclerView.layoutManager = layoutManager
+        adapter = RecyclerAdapter()
+        rvMainRecyclerView.adapter = adapter
+
+//        text = findViewById<TextView>(R.id.tvTitle)
 //      getBookInfo()
         getMoviesInfo()
 //        getCharactersInfo()
@@ -39,7 +47,6 @@ class MainActivity : AppCompatActivity() {
         endpoint.getBooksResponse().enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 val textResult = response.body()?.string()
-                text.text = textResult
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
@@ -48,25 +55,43 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+
     fun getMoviesInfo() {
-        endpoint.getMoviesResponse( accessToken).enqueue(object : Callback<ResponseBody> {
+        endpoint.getMoviesResponse(accessToken).enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 val textResult = response.body()?.string()
-                text.text = textResult
+
+                val jo = JSONObject(textResult)
+                val rootArray: JSONArray = jo.getJSONArray("docs")
+                val rootArrayLength = rootArray.length()
+                var data = Array(rootArrayLength){ Array(3) {""}}
+
+                for (i in 0 until rootArrayLength) {
+                    val id = rootArray.getJSONObject(i).getString("_id")
+                    val name = rootArray.getJSONObject(i).getString("name")
+                    val nominations = rootArray.getJSONObject(i).getInt("academyAwardNominations").toString()
+                    data[i][0] = id
+                    data[i][1] = name
+                    data[i][2] = nominations
+                    if(i == rootArrayLength-1){
+                        RecyclerAdapter.titles = data
+                        adapter?.notifyDataSetChanged()
+                    }
+                }
+//                println(data.contentDeepToString())
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                Log.e("MainAct:getMovies", "failure")
+                Log.e("MainAct:getCharacters", "failure")
             }
         })
     }
 
     fun getCharactersInfo() {
-        endpoint.getCharacters( accessToken).enqueue(object : Callback<ResponseBody> {
+        endpoint.getCharacters(accessToken).enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 val textResult = response.body()?.string()
                 var data = mutableListOf<String>()
-                //TODO SE NÁO FOR NULO
                 val jo = JSONObject(textResult)
                 val rootArray: JSONArray = jo.getJSONArray("docs")
                 val rootArrayLength = rootArray.length()
@@ -74,8 +99,6 @@ class MainActivity : AppCompatActivity() {
                     val name = rootArray.getJSONObject(i).getString("name")
                     data.add(name.toString())
                 }
-
-                text.text = data.toString()
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
@@ -88,8 +111,6 @@ class MainActivity : AppCompatActivity() {
         endpoint.getCharacterDetails(accessToken, characterId).enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 val textResult = response.body()?.string()
-
-                text.text = textResult.toString()
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
@@ -103,7 +124,6 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 val textResult = response.body()?.string()
                 var data = mutableListOf<String>()
-                //TODO SE NÁO FOR NULO
                 val jo = JSONObject(textResult)
                 val rootArray: JSONArray = jo.getJSONArray("docs")
                 val rootArrayLength = rootArray.length()
@@ -111,8 +131,6 @@ class MainActivity : AppCompatActivity() {
                     val quotes = rootArray.getJSONObject(i).getString("dialog")
                     data.add(quotes.toString())
                 }
-
-                text.text = data.toString()
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
