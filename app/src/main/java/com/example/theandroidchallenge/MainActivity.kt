@@ -9,7 +9,6 @@ import android.view.View
 import android.view.Window
 import android.widget.Button
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,23 +22,26 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-private var layoutManager: RecyclerView.LayoutManager? = null
-private var adapter: RecyclerView.Adapter<RecyclerAdapter.ViewHolder>? = null
-private lateinit var rvMainRecyclerView: RecyclerView
-private lateinit var tvShowInfo: TextView
-private lateinit var clList: ConstraintLayout
-private lateinit var btPrev: Button
-private lateinit var btNext: Button
-private lateinit var btn1 :Button
-private lateinit var btn2 :Button
-private lateinit var btn3 :Button
-private lateinit var btn4 :Button
-private lateinit var btn5 :Button
-private lateinit var btn6 :Button
-private lateinit var btn7 :Button
-private lateinit var btn8 :Button
-private lateinit var btn9 :Button
-private lateinit var btn10 :Button
+private var layoutManager : RecyclerView.LayoutManager? = null
+private var adapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder>? = null
+private lateinit var rvMainRecyclerView : RecyclerView
+private lateinit var tvShowInfo : TextView
+private lateinit var clList : ConstraintLayout
+private lateinit var btPrev : Button
+private lateinit var btNext : Button
+private lateinit var btn1 : Button
+private lateinit var btn2 : Button
+private lateinit var btn3 : Button
+private lateinit var btn4 : Button
+private lateinit var btn5 : Button
+private lateinit var btn6 : Button
+private lateinit var btn7 : Button
+private lateinit var btn8 : Button
+private lateinit var btn9 : Button
+private lateinit var btn10 : Button
+private lateinit var tvQuotes : TextView
+private lateinit var clScrollQuotes : ConstraintLayout
+private lateinit var dialog : Dialog
 var dataCharacters = Array(0){ Array(5) {""}}
 var quotesArray = mutableListOf<String>()
 
@@ -65,9 +67,12 @@ class MainActivity : AppCompatActivity(), RecyclerAdapter.OnItemClickListener {
         rvMainRecyclerView.adapter = adapter
 
         clList = findViewById(R.id.cl_List)
+        clScrollQuotes = findViewById(R.id.cl_ScrollQuotes)
         tvShowInfo = findViewById(R.id.tvName)
+        tvQuotes = findViewById(R.id.tvQuotes)
         btPrev = findViewById(R.id.btPrev)
         btNext = findViewById(R.id.btNext)
+        clScrollQuotes.visibility = View.GONE
         clList.visibility = View.GONE
         btPrev.visibility = View.GONE
         btNext.visibility = View.GONE
@@ -108,6 +113,10 @@ class MainActivity : AppCompatActivity(), RecyclerAdapter.OnItemClickListener {
         btPrev.setOnClickListener(){
             offsetSearch -=10
             getCharactersInfo()
+        }
+
+        clScrollQuotes.setOnClickListener(){
+            clScrollQuotes.visibility = View.GONE
         }
     }
 
@@ -211,14 +220,28 @@ class MainActivity : AppCompatActivity(), RecyclerAdapter.OnItemClickListener {
         endpoint.getCharactersQuotes(accessToken, characterId).enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 val textResult = response.body()?.string()
-
-                val jo = JSONObject(textResult)
-                val rootArray: JSONArray = jo.getJSONArray("docs")
+                quotesArray = arrayListOf()
+                val jo = textResult?.let { JSONObject(it) }
+                val rootArray: JSONArray = jo?.getJSONArray("docs")!!
                 val rootArrayLength = rootArray.length()
 
                 for (i in 0 until rootArrayLength) {
                    var quotes = rootArray.getJSONObject(i).getString("dialog")
-                    quotesArray.add(quotes.toString())
+                    quotesArray.add(quotes.toString()+"\n")
+
+                    if(i == rootArrayLength-1){
+                        if(dialog.isShowing){
+                            val quotesLayout = dialog.findViewById(R.id.clQuotes) as ConstraintLayout
+                            quotesLayout.visibility = View.VISIBLE
+
+                            quotesLayout.setOnClickListener(){
+                                dialog.dismiss()
+                                showQuotes(quotesArray as ArrayList<String>)
+                            }
+
+                        }
+                    }
+
                 }
             }
 
@@ -245,7 +268,7 @@ class MainActivity : AppCompatActivity(), RecyclerAdapter.OnItemClickListener {
 
     fun showDetailsDialog(personDetails: Array<String>) {
 
-        val dialog = Dialog(this)
+        dialog = Dialog(this)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT));
         val inflater = layoutInflater
@@ -258,7 +281,6 @@ class MainActivity : AppCompatActivity(), RecyclerAdapter.OnItemClickListener {
         quotesLayout.visibility = View.GONE
 
         getCharacterQuotes(accessToken, personDetails[0])
-
         name.text   = personDetails[1]
         gender.text = personDetails[2]
         race.text   = personDetails[3]
@@ -266,7 +288,11 @@ class MainActivity : AppCompatActivity(), RecyclerAdapter.OnItemClickListener {
 
         dialog.setContentView(dialogLayout)
         dialog.show()
+    }
 
+    fun showQuotes(quotesArray: ArrayList<String>) {
+        clScrollQuotes.visibility = View.VISIBLE
+        tvQuotes.text = quotesArray.toString()
     }
 
     override fun onItemClick(position: Int, title: String) {
@@ -277,4 +303,9 @@ class MainActivity : AppCompatActivity(), RecyclerAdapter.OnItemClickListener {
         getCharactersInfo()
     }
 
+    override fun onBackPressed() {
+        if(clScrollQuotes.visibility == View.VISIBLE){
+            clScrollQuotes.visibility = View.GONE
+        }
+    }
 }
