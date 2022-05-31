@@ -5,10 +5,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.squareup.picasso.Picasso
 
-class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder>() {
+class RecyclerAdapter(
+    private val listener: OnItemClickListener
+) : RecyclerView.Adapter<RecyclerAdapter.ViewHolder>() {
+
 
     companion object {
         var titles: Array<Array<String>> = Array(0){ Array(3) {""}}
@@ -29,16 +33,32 @@ class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.ViewHolder>() {
         return titles.size
     }
 
-    inner class ViewHolder(itemView: View): RecyclerView.ViewHolder(itemView){
+    inner class ViewHolder(itemView: View): RecyclerView.ViewHolder(itemView), View.OnClickListener{
         var itemImage : ImageView
         var itemTitle : TextView
         var itemDesc  : TextView
 
         init {
-            itemImage   = itemView.findViewById(R.id.ivCover)
-            itemTitle   = itemView.findViewById(R.id.tvTitle)
-            itemDesc    = itemView.findViewById(R.id.tvDesc)
+            itemImage   = itemView.findViewById(R.id.ivAvatar)
+            itemTitle   = itemView.findViewById(R.id.tvName)
+            itemDesc    = itemView.findViewById(R.id.tvGender)
+
+            itemView.setOnClickListener(){
+                val position = adapterPosition
+                val title = titles[position][0]
+                listener.onItemClick(position, title)
+                Toast.makeText(itemView.context, titles[position][1], Toast.LENGTH_SHORT).show()
+            }
         }
+
+        override fun onClick(p0: View?) {
+            this@RecyclerAdapter
+        }
+
+    }
+
+    interface OnItemClickListener{
+        fun onItemClick(position: Int, title: String)
     }
 
     fun getCover(idMovie: String) : Int{

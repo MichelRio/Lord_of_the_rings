@@ -17,9 +17,11 @@ interface Endpoint {
         @Header("Authorization") auth: String
     ): Call<ResponseBody>
 
-    @GET("character?limit=5")
+    @GET("character")
     fun getCharacters(
-        @Header("Authorization") auth: String
+        @Header("Authorization") auth: String,
+        @Query("limit") limit:Int,
+        @Query("offset") offset:Int
     ): Call<ResponseBody>
 
     @GET("character/{id}")
